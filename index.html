@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#002D6B">
+<title>PAI Opportunity Rater</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='24' fill='%23002D6B'/%3E%3Ctext x='96' y='125' font-family='system-ui,sans-serif' font-size='80' font-weight='700' fill='%2322D3EE' text-anchor='middle'%3EPAI%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --pai-navy: #002D6B;
+  --pai-navy-dark: #001a3d;
+  --pai-cyan: #22D3EE;
+  --pai-cyan-dim: rgba(34, 211, 238, 0.15);
+  --pai-cyan-glow: rgba(34, 211, 238, 0.35);
+  --white: #ffffff;
+  --off-white: #f4f7fb;
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --border: #d0dce8;
+  --border-light: #e8eef5;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --card-radius: 16px;
+  --btn-radius: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+  background: var(--off-white);
+  color: var(--text-primary);
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === HEADER === */
+.app-header {
+  background: linear-gradient(135deg, var(--pai-navy-dark), var(--pai-navy));
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+.app-header img {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+.app-header .brand {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--pai-cyan);
+  font-weight: 600;
+}
+.app-header h1 {
+  color: var(--white);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.header-right {
+  margin-left: auto;
+  color: var(--pai-cyan);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* === SCREENS === */
+.screen { display: none; height: calc(100vh - 72px); height: calc(100dvh - 72px); overflow-y: auto; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* === SCREEN 1: USER SELECT === */
+#screen-users {
+  padding: 24px 20px;
+  align-items: center;
+}
+#screen-users h2 {
+  font-size: 22px;
+  color: var(--pai-navy);
+  margin-bottom: 4px;
+  text-align: center;
+}
+#screen-users .subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.user-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;
+}
+.user-btn {
+  background: var(--white);
+  border: 2px solid var(--border-light);
+  border-radius: var(--btn-radius);
+  padding: 14px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pai-navy);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.user-btn .role {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+.user-btn:active {
+  transform: scale(0.95);
+  border-color: var(--pai-cyan);
+  background: var(--pai-cyan-dim);
+}
+
+/* === SCREEN 2: SWIPE === */
+#screen-swipe {
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+.progress-bar {
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.progress-track {
+  flex: 1;
+  height: 4px;
+  background: var(--border-light);
+  border-radius: 2px;
+  margin: 0 12px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--pai-cyan);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Card Stack */
+.card-stack {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px 0;
+  min-height: 0;
+}
+.opp-card {
+  position: absolute;
+  width: calc(100% - 40px);
+  max-width: 400px;
+  background: var(--white);
+  border-radius: var(--card-radius);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  padding: 20px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+  cursor: grab;
+  transition: box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: calc(100% - 8px);
+  overflow-y: auto;
+}
+.opp-card:active { cursor: grabbing; }
+.opp-card.behind {
+  transform: scale(0.95) translateY(8px);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.opp-card.far-behind {
+  transform: scale(0.9) translateY(16px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Swipe overlays */
+.swipe-overlay {
+  position: absolute;
+  top: 16px;
+  font-size: 18px;
+  font-weight: 800;
+  padding: 8px 16px;
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  z-index: 10;
+  pointer-events: none;
+}
+.swipe-overlay.like { right: 16px; color: var(--success); border: 3px solid var(--success); transform: rotate(15deg); }
+.swipe-overlay.nope { left: 16px; color: var(--danger); border: 3px solid var(--danger); transform: rotate(-15deg); }
+.swipe-overlay.act { left: 50%; transform: translateX(-50%) rotate(-5deg); color: var(--warning); border: 3px solid var(--warning); }
+
+/* Tier Badges */
+.tier-badge {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  align-self: flex-start;
+}
+.tier-act-now { background: #fee2e2; color: #991b1b; }
+.tier-strong-lead { background: #fef3c7; color: #78350f; }
+.tier-watch-this { background: #dbeafe; color: #1e40af; }
+
+.opp-card .headline {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.opp-card .why-now {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.first-step-box {
+  background: var(--pai-cyan-dim);
+  border-left: 3px solid var(--pai-cyan);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pai-navy);
+  line-height: 1.4;
+  box-shadow: 0 0 12px var(--pai-cyan-glow);
+}
+.first-step-box .label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--pai-cyan);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.inspired-by {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 20px 28px;
+  flex-shrink: 0;
+}
+.action-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.action-btn:active { transform: scale(0.9); }
+.btn-nope { background: var(--white); color: var(--danger); border: 2px solid #fecaca; }
+.btn-act { background: linear-gradient(135deg, var(--warning), #d97706); color: var(--white); width: 64px; height: 64px; font-size: 28px; box-shadow: 0 4px 16px rgba(245,158,11,0.3); }
+.btn-like { background: var(--white); color: var(--success); border: 2px solid #a7f3d0; }
+
+/* === SCREEN 3: SUMMARY === */
+#screen-summary {
+  padding: 24px 20px;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+#screen-summary h2 {
+  font-size: 22px;
+  color: var(--pai-navy);
+  text-align: center;
+}
+.summary-stats {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.stat-card {
+  background: var(--white);
+  border-radius: var(--card-radius);
+  padding: 20px 24px;
+  text-align: center;
+  min-width: 90px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.stat-card .num {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-card .label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.stat-more .num { color: var(--success); }
+.stat-less .num { color: var(--danger); }
+.stat-act .num { color: var(--warning); }
+
+.summary-list {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--white);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+}
+.summary-item .rating-icon { font-size: 18px; flex-shrink: 0; }
+.summary-item .title { flex: 1; font-weight: 500; color: var(--text-primary); }
+
+.summary-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.summary-btn {
+  padding: 14px 28px;
+  border-radius: var(--btn-radius);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.summary-btn:active { transform: scale(0.95); }
+.btn-done {
+  background: var(--pai-navy);
+  color: var(--white);
+}
+.btn-export {
+  background: var(--white);
+  color: var(--pai-navy);
+  border: 2px solid var(--border);
+}
+
+/* === ANIMATIONS === */
+@keyframes cardFlyRight {
+  to { transform: translateX(150%) rotate(30deg); opacity: 0; }
+}
+@keyframes cardFlyLeft {
+  to { transform: translateX(-150%) rotate(-30deg); opacity: 0; }
+}
+@keyframes cardFlyUp {
+  to { transform: translateY(-150%) scale(0.8); opacity: 0; }
+}
+@keyframes cardEnter {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Glow effects during swipe */
+.opp-card.glow-green { box-shadow: 0 0 30px rgba(16,185,129,0.4), 0 4px 24px rgba(0,0,0,0.08); }
+.opp-card.glow-red { box-shadow: 0 0 30px rgba(239,68,68,0.4), 0 4px 24px rgba(0,0,0,0.08); }
+.opp-card.glow-gold { box-shadow: 0 0 30px rgba(245,158,11,0.4), 0 0 60px rgba(34,211,238,0.2), 0 4px 24px rgba(0,0,0,0.08); }
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Safe area padding for iOS */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .action-buttons { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+  #screen-summary { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <img src="data:image/png;base64,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" alt="PAI" />
+  <div>
+    <div class="brand">PAI Consulting</div>
+    <h1>Opportunity Rater</h1>
+  </div>
+  <div class="header-right" id="header-user"></div>
+</header>
+
+<!-- SCREEN 1: User Selection -->
+<div id="screen-users" class="screen active">
+  <h2>Who's Rating?</h2>
+  <p class="subtitle">Tap your name to begin</p>
+  <div class="user-grid" id="user-grid"></div>
+</div>
+
+<!-- SCREEN 2: Swipe Interface -->
+<div id="screen-swipe" class="screen">
+  <div class="progress-bar">
+    <span id="progress-text">1 of 8</span>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <span id="progress-pct">0%</span>
+  </div>
+  <div class="card-stack" id="card-stack"></div>
+  <div class="action-buttons">
+    <button class="action-btn btn-nope" id="btn-nope" aria-label="Less of this">&#10005;</button>
+    <button class="action-btn btn-act" id="btn-act" aria-label="Act on this">&#9733;</button>
+    <button class="action-btn btn-like" id="btn-like" aria-label="More like this">&#10003;</button>
+  </div>
+</div>
+
+<!-- SCREEN 3: Summary -->
+<div id="screen-summary" class="screen">
+  <h2>Session Complete</h2>
+  <div class="summary-stats" id="summary-stats"></div>
+  <div class="summary-list" id="summary-list"></div>
+  <div class="summary-actions">
+    <button class="summary-btn btn-done" id="btn-done">Done</button>
+    <button class="summary-btn btn-export" id="btn-export">Export Ratings</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const USERS = [
+  { name: "Keith", role: "editor", weight: 1 },
+  { name: "Christa", role: "owner", weight: 3 },
+  { name: "Robin", role: "owner", weight: 3 },
+  { name: "Peggy", role: "owner", weight: 3 },
+  { name: "Joe", role: "director", weight: 2 },
+  { name: "Neil", role: "director", weight: 2 },
+  { name: "Sandy", role: "director", weight: 2 },
+  { name: "David", role: "director", weight: 2 },
+  { name: "Matt", role: "analyst", weight: 1.5 },
+  { name: "Tom", role: "analyst", weight: 1.5 },
+  { name: "Ashley", role: "analyst", weight: 1.5 },
+  { name: "Mari", role: "analyst", weight: 1.5 },
+  { name: "Natalie", role: "analyst", weight: 1.5 },
+  { name: "Amanda2", role: "analyst", weight: 1.5 },
+  { name: "Leah", role: "analyst", weight: 1.5 },
+  { name: "Peg", role: "analyst", weight: 1 },
+  { name: "Davis", role: "editor", weight: 1 },
+  { name: "Zoe", role: "editor", weight: 1 },
+  { name: "Amanda1", role: "analyst", weight: 1.5 },
+];
+
+const SAMPLE_OPPORTUNITIES = [
+  {
+    id: "OPP-2026-001",
+    tier: "act-now",
+    headline: "FAA Part 141 SMS Compliance Deadline Approaching",
+    whyNow: "The FAA has set a firm Q3 2026 deadline for all Part 141 flight schools to implement compliant Safety Management Systems. Hundreds of schools still lack basic SMS frameworks.",
+    firstStep: "Draft a targeted outreach campaign to the top 50 Part 141 schools without current SMS contracts, offering a 90-day fast-track implementation package.",
+    inspiredBy: "\"FAA Tightens SMS Timeline for Flight Schools\" — Aviation Week"
+  },
+  {
+    id: "OPP-2026-002",
+    tier: "act-now",
+    headline: "NTSB Calls for SMS Overhaul After Regional Carrier Incident",
+    whyNow: "Following the Horizon Air runway incursion investigation, NTSB issued urgent recommendations for SMS improvements across all Part 121 carriers. Congressional pressure is mounting for faster compliance.",
+    firstStep: "Contact the three regional carriers named in the NTSB report within 48 hours to offer an immediate SMS gap assessment and remediation roadmap.",
+    inspiredBy: "\"NTSB Report Reveals SMS Gaps in Regional Operations\" — FlightGlobal"
+  },
+  {
+    id: "OPP-2026-003",
+    tier: "strong-lead",
+    headline: "SkyBridge Regional Airlines Releases SMS Consulting RFP",
+    whyNow: "SkyBridge Airlines, a growing Part 121 regional carrier with 45 aircraft, has formally issued an RFP for comprehensive SMS consulting services. Proposals due in 6 weeks.",
+    firstStep: "Assign proposal lead and schedule a pre-bid call with SkyBridge's VP of Safety to understand their specific pain points and fleet expansion timeline.",
+    inspiredBy: "\"SkyBridge Airlines Expands Fleet, Seeks Safety Partners\" — Air Transport World"
+  },
+  {
+    id: "OPP-2026-004",
+    tier: "strong-lead",
+    headline: "UAS Integration Demands New SMS Frameworks for Drone Operators",
+    whyNow: "The FAA's expanded BVLOS waiver program is creating demand for SMS frameworks tailored to commercial UAS operators. Over 200 operators need compliant systems by year-end.",
+    firstStep: "Develop a UAS-specific SMS template package and partner with two leading drone industry associations to co-market it at the upcoming AUVSI conference.",
+    inspiredBy: "\"FAA Expands BVLOS Approvals, Raises Safety Bar\" — Inside Unmanned Systems"
+  },
+  {
+    id: "OPP-2026-005",
+    tier: "watch-this",
+    headline: "ICAO/EASA Push for International SMS Harmonization Standards",
+    whyNow: "ICAO and EASA are collaborating on unified SMS standards that could reshape compliance requirements globally. Draft framework expected Q1 2027, but advisory committees are forming now.",
+    firstStep: "Apply for observer status on the ICAO SMS Harmonization Working Group and publish a thought leadership brief on implications for U.S. operators.",
+    inspiredBy: "\"Global SMS Standards: ICAO and EASA Align\" — Aviation International News"
+  },
+  {
+    id: "OPP-2026-006",
+    tier: "watch-this",
+    headline: "AI-Powered Safety Reporting Systems Gaining Traction",
+    whyNow: "Several airlines are piloting AI/ML tools for automated safety report analysis and trend detection. This represents both a competitive threat and a partnership opportunity for SMS consultants.",
+    firstStep: "Evaluate top 3 AI safety reporting platforms for potential integration partnership and schedule demos with their business development teams.",
+    inspiredBy: "\"Machine Learning Transforms Aviation Safety Reporting\" — IEEE Spectrum"
+  },
+  {
+    id: "OPP-2026-007",
+    tier: "strong-lead",
+    headline: "Major Airport Authority Seeks SMS Gap Assessment",
+    whyNow: "A top-20 U.S. airport authority is budgeting for a comprehensive SMS gap assessment across all airside and landside operations following a near-miss incident that drew FAA scrutiny.",
+    firstStep: "Leverage existing airport authority contacts to secure an introductory meeting with their new Director of Safety before the RFP is formally issued.",
+    inspiredBy: "\"Airport Safety Under Microscope After Taxiway Incident\" — Airport Business"
+  },
+  {
+    id: "OPP-2026-008",
+    tier: "act-now",
+    headline: "DOT Mandates SMS for New Part 5 Applicants",
+    whyNow: "The Department of Transportation has finalized rules requiring all new Part 5 pipeline and transit safety applicants to demonstrate SMS implementation. Dozens of organizations need immediate consulting support.",
+    firstStep: "Publish a Part 5 SMS readiness checklist on the PAI website and launch a LinkedIn ad campaign targeting safety directors at transit and pipeline organizations.",
+    inspiredBy: "\"DOT Finalizes Part 5 SMS Requirements\" — Transport Topics"
+  }
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let currentUser = null;
+let currentCardIndex = 0;
+let sessionRatings = [];
+const STORAGE_KEY = 'pai-ratings';
+
+// ============================================================
+// SCREEN MANAGEMENT
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ============================================================
+// SCREEN 1: USER SELECTION
+// ============================================================
+function initUserGrid() {
+  const grid = document.getElementById('user-grid');
+  USERS.forEach(user => {
+    const btn = document.createElement('button');
+    btn.className = 'user-btn';
+    btn.innerHTML = `${user.name}<span class="role">${user.role}</span>`;
+    btn.addEventListener('click', () => selectUser(user));
+    grid.appendChild(btn);
+  });
+}
+
+function selectUser(user) {
+  currentUser = user;
+  document.getElementById('header-user').textContent = user.name;
+  currentCardIndex = 0;
+  sessionRatings = [];
+  initSwipeScreen();
+  showScreen('screen-swipe');
+}
+
+// ============================================================
+// SCREEN 2: SWIPE INTERFACE
+// ============================================================
+function initSwipeScreen() {
+  const stack = document.getElementById('card-stack');
+  stack.innerHTML = '';
+  updateProgress();
+  renderCards();
+}
+
+function updateProgress() {
+  const total = SAMPLE_OPPORTUNITIES.length;
+  const current = Math.min(currentCardIndex + 1, total);
+  const pct = Math.round((currentCardIndex / total) * 100);
+  document.getElementById('progress-text').textContent = `${current} of ${total}`;
+  document.getElementById('progress-fill').style.width = `${pct}%`;
+  document.getElementById('progress-pct').textContent = `${pct}%`;
+}
+
+function tierClass(tier) {
+  return 'tier-' + tier;
+}
+function tierLabel(tier) {
+  return { 'act-now': 'Act Now', 'strong-lead': 'Strong Lead', 'watch-this': 'Watch This' }[tier] || tier;
+}
+
+function renderCards() {
+  const stack = document.getElementById('card-stack');
+  stack.innerHTML = '';
+
+  const remaining = SAMPLE_OPPORTUNITIES.slice(currentCardIndex);
+  if (remaining.length === 0) {
+    showSummary();
+    return;
+  }
+
+  // Render up to 3 cards (back to front)
+  const toRender = remaining.slice(0, 3).reverse();
+  toRender.forEach((opp, i) => {
+    const realIndex = toRender.length - 1 - i;
+    const card = document.createElement('div');
+    card.className = 'opp-card';
+    if (realIndex === 1) card.classList.add('behind');
+    if (realIndex === 2) card.classList.add('far-behind');
+    card.dataset.id = opp.id;
+
+    card.innerHTML = `
+      <div class="swipe-overlay like">MORE</div>
+      <div class="swipe-overlay nope">NOPE</div>
+      <div class="swipe-overlay act">ACT!</div>
+      <span class="tier-badge ${tierClass(opp.tier)}">${tierLabel(opp.tier)}</span>
+      <div class="headline">${opp.headline}</div>
+      <div class="why-now">${opp.whyNow}</div>
+      <div class="first-step-box">
+        <div class="label">First Step</div>
+        ${opp.firstStep}
+      </div>
+      <div class="inspired-by">Inspired by: ${opp.inspiredBy}</div>
+    `;
+
+    stack.appendChild(card);
+
+    if (realIndex === 0) {
+      setupSwipe(card);
+    }
+  });
+}
+
+// ============================================================
+// SWIPE PHYSICS
+// ============================================================
+function setupSwipe(card) {
+  let startX = 0, startY = 0, currentX = 0, currentY = 0;
+  let isDragging = false;
+
+  function onStart(e) {
+    isDragging = true;
+    const point = e.touches ? e.touches[0] : e;
+    startX = point.clientX;
+    startY = point.clientY;
+    currentX = 0;
+    currentY = 0;
+    card.style.transition = 'none';
+  }
+
+  function onMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    const point = e.touches ? e.touches[0] : e;
+    currentX = point.clientX - startX;
+    currentY = point.clientY - startY;
+
+    const rotation = currentX * 0.08;
+    card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotation}deg)`;
+
+    // Show overlays
+    const likeOverlay = card.querySelector('.swipe-overlay.like');
+    const nopeOverlay = card.querySelector('.swipe-overlay.nope');
+    const actOverlay = card.querySelector('.swipe-overlay.act');
+
+    likeOverlay.style.opacity = Math.min(Math.max(currentX / 100, 0), 1);
+    nopeOverlay.style.opacity = Math.min(Math.max(-currentX / 100, 0), 1);
+    actOverlay.style.opacity = Math.min(Math.max(-currentY / 80, 0), 1);
+
+    // Glow effects
+    card.classList.remove('glow-green', 'glow-red', 'glow-gold');
+    if (currentX > 60) card.classList.add('glow-green');
+    else if (currentX < -60) card.classList.add('glow-red');
+    if (currentY < -50) card.classList.add('glow-gold');
+  }
+
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+
+    // Check thresholds
+    if (currentY < -80 && Math.abs(currentX) < 80) {
+      completeSwipe('act');
+    } else if (currentX > 100) {
+      completeSwipe('more');
+    } else if (currentX < -100) {
+      completeSwipe('less');
+    } else {
+      // Spring back
+      card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      card.style.transform = '';
+      card.classList.remove('glow-green', 'glow-red', 'glow-gold');
+      card.querySelectorAll('.swipe-overlay').forEach(o => o.style.opacity = 0);
+    }
+  }
+
+  card.addEventListener('pointerdown', onStart);
+  document.addEventListener('pointermove', onMove, { passive: false });
+  document.addEventListener('pointerup', onEnd);
+
+  // Store cleanup ref
+  card._cleanup = () => {
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onEnd);
+  };
+}
+
+function completeSwipe(rating) {
+  const stack = document.getElementById('card-stack');
+  const card = stack.lastElementChild;
+  if (!card) return;
+
+  // Cleanup listeners
+  if (card._cleanup) card._cleanup();
+
+  const opp = SAMPLE_OPPORTUNITIES[currentCardIndex];
+
+  // Animate out
+  card.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
+  if (rating === 'more') {
+    card.style.animation = 'cardFlyRight 0.4s forwards';
+  } else if (rating === 'less') {
+    card.style.animation = 'cardFlyLeft 0.4s forwards';
+  } else {
+    card.style.animation = 'cardFlyUp 0.4s forwards';
+  }
+
+  // Record rating
+  const ratingRecord = {
+    sessionId: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    user: currentUser.name,
+    role: currentUser.role,
+    weight: currentUser.weight,
+    timestamp: new Date().toISOString(),
+    opportunityId: opp.id,
+    opportunityHeadline: opp.headline,
+    tier: opp.tier,
+    rating: rating
+  };
+  sessionRatings.push(ratingRecord);
+  saveRating(ratingRecord);
+
+  currentCardIndex++;
+
+  setTimeout(() => {
+    updateProgress();
+    renderCards();
+  }, 350);
+}
+
+// Button handlers
+document.getElementById('btn-nope').addEventListener('click', () => {
+  if (currentCardIndex < SAMPLE_OPPORTUNITIES.length) completeSwipe('less');
+});
+document.getElementById('btn-like').addEventListener('click', () => {
+  if (currentCardIndex < SAMPLE_OPPORTUNITIES.length) completeSwipe('more');
+});
+document.getElementById('btn-act').addEventListener('click', () => {
+  if (currentCardIndex < SAMPLE_OPPORTUNITIES.length) completeSwipe('act');
+});
+
+// ============================================================
+// SCREEN 3: SUMMARY
+// ============================================================
+function showSummary() {
+  showScreen('screen-summary');
+
+  const more = sessionRatings.filter(r => r.rating === 'more').length;
+  const less = sessionRatings.filter(r => r.rating === 'less').length;
+  const act = sessionRatings.filter(r => r.rating === 'act').length;
+
+  document.getElementById('summary-stats').innerHTML = `
+    <div class="stat-card stat-more"><div class="num">${more}</div><div class="label">More Like This</div></div>
+    <div class="stat-card stat-act"><div class="num">${act}</div><div class="label">Act On This</div></div>
+    <div class="stat-card stat-less"><div class="num">${less}</div><div class="label">Less Of This</div></div>
+  `;
+
+  const list = document.getElementById('summary-list');
+  list.innerHTML = '';
+  sessionRatings.forEach(r => {
+    const icons = { more: '&#10003;', less: '&#10005;', act: '&#9733;' };
+    const colors = { more: 'color:var(--success)', less: 'color:var(--danger)', act: 'color:var(--warning)' };
+    const item = document.createElement('div');
+    item.className = 'summary-item';
+    item.innerHTML = `<span class="rating-icon" style="${colors[r.rating]}">${icons[r.rating]}</span><span class="title">${r.opportunityHeadline}</span>`;
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('btn-done').addEventListener('click', () => {
+  showScreen('screen-users');
+  document.getElementById('header-user').textContent = '';
+  currentUser = null;
+});
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  const allRatings = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const blob = new Blob([JSON.stringify(allRatings, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pai-ratings-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ============================================================
+// LOCAL STORAGE
+// ============================================================
+function saveRating(record) {
+  const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  all.push(record);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+}
+
+// ============================================================
+// INIT
+// ============================================================
+initUserGrid();
+
+// Prevent overscroll on iOS
+document.body.addEventListener('touchmove', e => {
+  if (document.getElementById('screen-swipe').classList.contains('active')) {
+    const card = e.target.closest('.opp-card');
+    if (card) e.preventDefault();
+  }
+}, { passive: false });
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
